@@ -4,14 +4,24 @@
   <meta charset="UTF-8">
   <title>Reconocimiento de Números</title>
 
-  <!-- Librerías necesarias -->
+  <!-- ✅ Librerías necesarias -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.6.0/fabric.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fabric@4.6.0/dist/fabric.min.js"></script>
 
   <style>
-    body { text-align: center; font-family: Arial, sans-serif; background-color: #f7f7f7; }
-    h1 { margin-top: 20px; }
-    #bigcanvas { border: 2px solid #000; margin-top: 20px; background: white; }
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #bigcanvas {
+      border: 2px solid #000;
+      margin-top: 20px;
+      background: white;
+    }
     button {
       margin: 10px;
       padding: 10px 20px;
@@ -22,30 +32,64 @@
       cursor: pointer;
       font-size: 16px;
     }
-    button:hover { background: #0056b3; }
-    #resultado { font-size: 32px; margin-top: 20px; }
+    button:hover {
+      background: #0056b3;
+    }
+    #resultado {
+      font-size: 32px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <h1>Dibuja un número (0–9)</h1>
 
+  <!-- 🎨 Área para dibujar -->
   <canvas id="bigcanvas" width="200" height="200"></canvas><br>
+
   <button onclick="limpiar()">🧹 Limpiar</button>
   <button id="btnPredecir" onclick="predecir()" disabled>🔍 Predecir</button>
 
   <div id="resultado"></div>
+
+  <!-- Canvas oculto para redimensionar a 28x28 -->
   <canvas id="smallcanvas" width="28" height="28" style="display:none"></canvas>
 
-  <script src="drawing.js"></script>
+  <!-- 🖊️ Script de dibujo -->
+  <script>
+    let canvas;
 
+    window.addEventListener("load", () => {
+      // Crear pizarra de dibujo
+      canvas = new fabric.Canvas("bigcanvas");
+      canvas.isDrawingMode = true;
+
+      canvas.freeDrawingBrush.width = 15;
+      canvas.freeDrawingBrush.color = "black";
+      canvas.setBackgroundColor("white", canvas.renderAll.bind(canvas));
+
+      console.log("🖊️ Listo para dibujar!");
+    });
+
+    function limpiar() {
+      canvas.clear();
+      canvas.setBackgroundColor("white", canvas.renderAll.bind(canvas));
+    }
+  </script>
+
+  <!-- 🤖 Script de predicción -->
   <script>
     let modelo = null;
 
     async function cargarModelo() {
       console.log("Cargando modelo...");
-      modelo = await tf.loadLayersModel("model.json");
-      console.log("✅ Modelo cargado");
-      document.getElementById("btnPredecir").disabled = false;
+      try {
+        modelo = await tf.loadLayersModel("model.json");
+        console.log("✅ Modelo cargado correctamente");
+        document.getElementById("btnPredecir").disabled = false;
+      } catch (error) {
+        console.error("❌ Error al cargar el modelo:", error);
+      }
     }
     cargarModelo();
 
@@ -64,20 +108,23 @@
       const ctxSmall = small.getContext("2d");
       const big = document.getElementById("bigcanvas");
 
+      // Redimensionar el dibujo a 28x28
       resample_single(big, 28, 28, small);
       const imgData = ctxSmall.getImageData(0, 0, 28, 28);
 
+      // Procesar la imagen en blanco y negro
       let arr = [];
       for (let i = 0; i < 28; i++) {
         let row = [];
         for (let j = 0; j < 28; j++) {
           const pos = (i * 28 + j) * 4;
-          const val = imgData.data[pos + 3] / 255;
+          const val = imgData.data[pos + 3] / 255; // canal alpha (transparencia)
           row.push([val]);
         }
         arr.push(row);
       }
 
+      // Convertir a tensor
       const tensor = tf.tensor4d([arr], [1, 28, 28, 1]);
       const prediccion = modelo.predict(tensor).dataSync();
       const numero = prediccion.indexOf(Math.max(...prediccion));
@@ -87,4 +134,5 @@
   </script>
 </body>
 </html>
+
 
