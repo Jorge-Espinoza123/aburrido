@@ -6,7 +6,6 @@ window.addEventListener("load", () => {
 
   canvas.freeDrawingBrush.width = 15;
   canvas.freeDrawingBrush.color = "black";
-
   canvas.setBackgroundColor("white", canvas.renderAll.bind(canvas));
 
   console.log("🖊️ Listo para dibujar!");
